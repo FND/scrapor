@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+from scrapor.html import text, Collection
+
+from textwrap import wrap, indent
+from random import randint
+
+import sys
+
+
+INDENT = " " * 4
+
+
+def main(args):
+    c = SampleCollection.retrieve(SampleCollection.entry_point)
+    for item in c.items():
+        html = render_item(item)
+        print(indent(html, INDENT * 2))
+
+    return True
+
+
+class SampleCollection(Collection):
+    entry_point = "http://example.org"
+    item_selector = "h1, p:first-of-type"
+    _mirror = "https://example.com"
+
+    def __init__(self, url, html, store=None):
+        super().__init__(url, html)
+        self.store = store or 0
+
+    def item(self, node):
+        return {
+            "uri": "%s/%s" % (self.url, randint(1, 99)),
+            "title": text(node)
+        }
+
+    def next_page(self):
+        self.store += 1
+        return self._mirror if self.store < 2 else None
+
+
+def render_item(item):
+    lines = wrap(item["title"], 60)
+    return """
+<article>
+    <a href="%(uri)s">%(caption)s</a>
+</article>
+    """.strip() % {
+        "uri": item["uri"],
+        "caption": lines[0] if len(lines) == 1 else "\n%s\n%s" % (
+                indent("\n".join(lines), INDENT * 2), INDENT)
+    }
+
+
+if __name__ == "__main__":
+    status = not main(sys.argv)
+    sys.exit(status)
