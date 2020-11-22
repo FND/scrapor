@@ -30,49 +30,54 @@ def expect_elements(count, selector, node):
     return nodes[0] if count == 1 else nodes
 
 
+class Collection:
+    """
+    abstraction for pages containing multiple items, optionally across multiple
+    related pages (i.e. supports auto-pagination)
+    """
+
+    item_selector = None
+    __slots__ = ("entry_point",)
+
+    def __init__(self, entry_point):
+        self.entry_point = entry_point
+
+    def items(self, _url=None):
+        page = Page.retrieve(_url or self.entry_point)
+        for item in page.doc.select(self.item_selector):
+            yield self.item(item, page)
+
+        try:
+            next_url = self.next_page(page)
+        except NotImplementedError:
+            next_url = None
+        if next_url:
+            yield from self.items(next_url)
+
+    def item(self, node, page):
+        raise NotImplementedError
+
+    def next_page(self, page):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return '<html.Collection "%s">' % self.entry_point
+
+
 class Page:
     __slots__ = ("url", "doc")
 
     @classmethod
-    def retrieve(cls, url, *args, **kwargs):
+    def retrieve(cls, url):
         res = http_request("GET", url, {
             "User-Agent": USER_AGENT,
             "Accept": "text/html"
         })
-        return cls(url, res, *args, **kwargs)
+        return cls(url, res)
 
-    def __init__(self, url, html, *args, **kwargs):
+    def __init__(self, url, html):
         self.url = url
         self.doc = BeautifulSoup(html, "html.parser")
 
-
-class Collection(Page):
-    """
-    abstraction for pages containing multiple items, optionally across multiple
-    related pages (i.e. supports pagination)
-
-    auto-pagination creates one instance per URL; if present, `store` is shared
-    among instances (e.g. for abort conditions within `next_page`)
-    """
-
-    item_selector = None
-    __slots__ = ("store",)
-
-    def items(self):
-        for item in self.doc.select(self.item_selector):
-            yield self.item(item)
-
-        try:
-            next_url = self.next_page()
-        except NotImplementedError:
-            next_url = None
-        if next_url:
-            store = getattr(self, "store", None)
-            page = self.__class__.retrieve(next_url, store)
-            yield from page.items()
-
-    def item(self, node):
-        raise NotImplementedError
-
-    def next_page(self):
-        raise NotImplementedError
+    def __repr__(self):
+        return '<html.Page "%s">' % self.url

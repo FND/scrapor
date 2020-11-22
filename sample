@@ -12,7 +12,7 @@ INDENT = " " * 4
 
 
 def main(args):
-    c = SampleCollection.retrieve(SampleCollection.entry_point)
+    c = SampleCollection(SampleCollection.entry_point)
     for item in c.items():
         html = render_item(item)
         print(indent(html, INDENT * 2))
@@ -25,19 +25,19 @@ class SampleCollection(Collection):
     item_selector = "h1, p:first-of-type"
     _mirror = "https://example.com"
 
-    def __init__(self, url, html, store=None):
-        super().__init__(url, html)
-        self.store = store or 0
+    def __init__(self, entry_point):
+        super().__init__(entry_point)
+        self.page_count = 0
 
-    def item(self, node):
+    def item(self, node, page):
         return {
-            "uri": "%s/%s" % (self.url, randint(1, 99)),
+            "uri": "%s/%s" % (page.url, randint(1, 99)),
             "title": text(node)
         }
 
-    def next_page(self):
-        self.store += 1
-        return self._mirror if self.store < 2 else None
+    def next_page(self, page):
+        self.page_count += 1
+        return self._mirror if self.page_count < 2 else None
 
 
 def render_item(item):
