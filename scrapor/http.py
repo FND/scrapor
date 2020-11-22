@@ -11,7 +11,7 @@ CLIENTS = {
 
 
 def http_request(method, url, headers={}, body=None):
-    eprint("retrieving", url)
+    eprint("retrieving <%s>..." % url)
     url = urlparse(url)
     uri = "?".join([x for x in [url.path, url.query] if x]) # TODO: `url.params`?
     conn = CLIENTS[url.scheme](url.netloc)
