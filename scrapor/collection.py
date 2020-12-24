@@ -1,5 +1,6 @@
 from .html import Page
-from .util import write_file, eprint
+from .lui import lui
+from .util import write_file
 
 import os
 
@@ -56,7 +57,7 @@ class PersistentCollection(Collection):
             with open(store_path, encoding="utf-8") as fh:
                 self._store = [line.strip() for line in fh]
         except FileNotFoundError:
-            eprint("WARNING: `%s` not found; creating new store" % store_path)
+            lui.print("WARNING: `%s` not found; creating new store" % store_path)
             assert os.path.isabs(store_path), (
                     "ERROR: store path must be absolute `%s`" % store_path)
             self._store = []
@@ -71,7 +72,7 @@ class PersistentCollection(Collection):
         if threshold:
             excess = len(store) - threshold
             if excess > 0:
-                eprint("WARNING: dropping %d old items from store" % excess)
+                lui.print("WARNING: dropping %d old items from store" % excess)
                 self._store = store = store[excess:]
         write_file(self.store_path, "\n".join(store) + "\n")
 
